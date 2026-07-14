@@ -1,6 +1,6 @@
 from model.game_state import GameState
 from model.position import Position
-from real_time.real_time_arbiter import RealTimeArbiter
+from real_time.real_time_arbiter import RealTimeArbiter  # שימי לב לנתיב הייבוא אם השתנה
 from rules.rule_engine import validate_motion
 
 
@@ -22,8 +22,8 @@ class GameEngine:
         if self._state.game_over:
             return {"IS_ACCEPTED": False, "REASON": "GAME OVER"}
 
-        # Guard 2: דחיית הבקשה אם יש כבר תנועה פעילה במסלול המבוקש
-        if self._arbiter.is_route_active(source, target):
+        # Guard 2: דחיית הבקשה אם יש כבר תנועה פעילה במסלול המבוקש (העברנו את ה-board!)
+        if self._arbiter.is_route_active(self._state.board, source, target):
             return {"IS_ACCEPTED": False, "REASON": "MOTION IN PROGRESS"}
 
         # Guard 3: העברת הבקשה ל-RuleEngine לבדיקת חוקיות שחמטית
@@ -37,8 +37,8 @@ class GameEngine:
         return {"IS_ACCEPTED": True, "REASON": "OK"}
 
     def wait(self, ms: int) -> None:
-        """האצלת סמכות לקידום זמן הסימולציה בארביטר"""
-        self._arbiter.advance_time(ms)
+        """האצלת סמכות לקידום זמן הסימולציה בארביטר (העברנו את ה-board!)"""
+        self._arbiter.advance_time(ms, self._state.board)
 
     def notify_king_captured(self, loser_color: str) -> None:
         """קבלת התראה על אכילת מלך ועדכון מצב סיום המשחק"""
