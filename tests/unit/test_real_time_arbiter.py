@@ -3,7 +3,7 @@ from model.position import Position
 from model.piece import Piece
 from model.board import Board
 from real_time.real_time_arbiter import RealTimeArbiter
-from config import STEP_DURATION_MS
+from config import STEP_DURATION_MS, DEFAULT_COOLDOWN, COOLDOWN_BY_KIND
 
 
 class TestRealTimeArbiter(unittest.TestCase):
@@ -12,6 +12,42 @@ class TestRealTimeArbiter(unittest.TestCase):
         """הכנת לוח וארביטר נקיים לפני כל טסט"""
         self.board = Board(width=8, height=8)
         self.arbiter = RealTimeArbiter()
+
+    def test_cooldown_is_applied_on_arrival(self):
+        """🌟 בדיקה חדשה: כלי שמסיים תנועה ונוחת מקבל את זמן הצינון המתאים מה-Config"""
+        # נניח רגלי (pawn) ב-(0, 0) ונשלח אותו ל-(1, 0)
+        pawn = Piece("w_pawn_1", color="white", kind="pawn", cell=Position(0, 0))
+        self.board.add_piece(pawn)
+
+        # לפני התנועה - הצינון שלו הוא 0
+        self.assertEqual(pawn.cooldown_remaining, 0)
+
+        # מתחילים תנועה ומריצים את הזמן עד לנחיתה (למשל 2000ms)
+        self.arbiter.start_motion(self.board, Position(0, 0), Position(1, 0))
+        self.arbiter.advance_time(2000, self.board)
+
+        # כעת הכלי נחת. הצינון שלו צריך להיות מוגדר לפי סוג הכלי (pawn) מתוך ה-Config
+        expected_cooldown = COOLDOWN_BY_KIND.get("pawn", DEFAULT_COOLDOWN)
+        self.assertEqual(pawn.cooldown_remaining, expected_cooldown)
+
+    def test_cooldown_decreases_over_time(self):
+        """🌟 בדיקה חדשה: זמן הצינון של הכלים שעל הלוח קטן בהתאמה להתקדמות הזמן בארביטר"""
+        # נשים כלי על הלוח ונגדיר לו ידנית זמן צינון התחלתי של 3000ms
+        rook = Piece("w_rook_1", color="white", kind="rook", cell=Position(3, 3))
+        rook.cooldown_remaining = 3000
+        self.board.add_piece(rook)
+
+        # נקדם את הזמן בארביטר ב-1000ms
+        self.arbiter.advance_time(1000, self.board)
+
+        # הצינון צריך לרדת ל-2000ms (3000 - 1000)
+        self.assertEqual(rook.cooldown_remaining, 2000)
+
+        # נקדם את הזמן בעוד 2500ms (סך הכל עברנו את זמן הצינון)
+        self.arbiter.advance_time(2500, self.board)
+
+        # הצינון צריך להיעצר בדיוק ב-0 (ולא לרדת למספרים שליליים)
+        self.assertEqual(rook.cooldown_remaining, 0)
 
     def test_is_route_active_only_blocks_if_piece_is_already_moving(self):
         """בדיקה שאין יותר חסימת מסלולים מראש, אלא רק מניעת פקודה כפולה לאותו כלי"""
@@ -115,4 +151,3 @@ class TestRealTimeArbiter(unittest.TestCase):
         landed_rook = self.board.get_piece_at(Position(2, 2))
         self.assertIsNotNone(landed_rook)
         self.assertEqual(landed_rook, moving_rook)
-

@@ -80,6 +80,22 @@ class Board:
         # 3. נשמור את הכלי במיקום החדש במילון הלוח
         self._grid[destination] = piece
 
+    def clone(self) -> 'Board':
+        """
+        מייצר עותק חדש ועצמאי לחלוטין (Deep Copy) של הלוח וכל הכלים שעליו.
+        מוודא שהלוח החדש לא חולק רפרנסים בזיכרון עם הלוח המקורי.
+        """
+        # 1. יצירת לוח חדש עם אותם הממדים
+        cloned_board = Board(width=self.width, height=self.height)
+
+        # 2. מעבר על הרשת (grid) של הלוח המקורי, שכפול הכלים והוספתם ללוח החדש
+        for pos, piece in self._grid.items():
+            # שימוש במתודת ה-clone של ה-Piece (שומרת על ה-cooldown_remaining וה-state)
+            cloned_piece = piece.clone()
+            cloned_board.add_piece(cloned_piece)
+
+        return cloned_board
+
     # --- ייצוג קריא לצרכי דיבאג ---
     def __repr__(self) -> str:
         return f"Board(width={self._width}, height={self._height}, occupied_cells={len(self._grid)})"

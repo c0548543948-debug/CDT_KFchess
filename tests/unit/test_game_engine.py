@@ -23,12 +23,27 @@ class TestGameEngine(unittest.TestCase):
         self.assertFalse(res["IS_ACCEPTED"])
         self.assertEqual(res["REASON"], "GAME OVER")
 
+    def test_reject_move_when_piece_in_cooldown(self):
+        """🌟 בדיקה חדשה: המנוע דוחה בקשת תנועה אם הכלי נמצא בזמן צינון"""
+        # 1. נניח כלי על הלוח במיקום המקור
+        pawn = Piece(piece_id="w_pawn_1", kind="pawn", color="white", cell=Position(1, 3))
+
+        # 2. נגדיר לו ידנית זמן צינון פעיל (למשל, נשארו 1500 מילישניות)
+        pawn.cooldown_remaining = 1500
+        self.board.add_piece(pawn)
+
+        # 3. ננסה לבקש מהלך עבור החייל שבצינון
+        res = self.engine.move_request(Position(1, 3), Position(2, 3))
+
+        # 4. המנוע חייב לדחות את הבקשה עם סיבה מתאימה
+        self.assertFalse(res["IS_ACCEPTED"])
+        self.assertEqual(res["REASON"], "PIECE IN COOLDOWN")
+
     def test_reject_move_when_motion_in_progress(self):
         """בדיקה שהמנוע חוסם מהלך רק אם הכלי עצמו כבר נמצא באמצע תנועה פעילה"""
-        from model.piece import Piece
         from model.motion import Motion
 
-        # 1. נניח כלי על הלוח במיקום המקור
+        # 1. נניח כלי על הלוח במיקום המקור (עם צינון 0 כדי שלא יתנגש בבדיקת הצינון)
         pawn = Piece(piece_id="w_pawn_1", kind="pawn", color="white", cell=Position(1, 3))
         self.board.add_piece(pawn)
 
@@ -40,6 +55,7 @@ class TestGameEngine(unittest.TestCase):
         res = self.engine.move_request(Position(1, 3), Position(3, 3))
         self.assertFalse(res["IS_ACCEPTED"])
         self.assertEqual(res["REASON"], "MOTION IN PROGRESS")
+
     def test_king_capture_triggers_game_over(self):
         """בדיקה שהודעה על אכילת מלך מעבירה את המשחק למצב סיום ומגדירה מנצח"""
         self.engine.notify_king_captured(loser_color="white")

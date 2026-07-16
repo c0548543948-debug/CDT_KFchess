@@ -1,7 +1,7 @@
 from model.position import Position
 from model.board import Board
 from model.motion import Motion
-
+from config import COOLDOWN_BY_KIND, DEFAULT_COOLDOWN
 
 class RealTimeArbiter:
     def __init__(self):
@@ -21,7 +21,7 @@ class RealTimeArbiter:
         if not actual_piece:
             return False
 
-        # מניעת פקודה כפולה לאותו כלי בלבד
+        # mניעת פקודה כפולה לאותו כלי בלבד
         return self.is_piece_moving(actual_piece)
 
     def start_motion(self, board: Board, source: Position, target: Position) -> None:
@@ -36,25 +36,34 @@ class RealTimeArbiter:
 
     def advance_time(self, ms: int, board: Board) -> list[str]:
         """
-        מקדמת את זמן הסימולציה בצעדים קטנים (Ticks) לפתרון מדויק של התנגשויות.
+        מקדמת את זמן הסימולציה בצעדים קטנים (Ticks) לפתרון מדויק של התנגשויות,
+        ולאחר מכן מפחיתה את זמני הצינון של הכלים שעל הלוח.
         """
         finished_pieces_kinds = []
         remaining_ms = ms
 
+        # 1. קודם כל: נפחית את הצינון לכלים שכבר עמדו על הלוח בתחילת הפעימה הזו.
+        # הכלים שינחתו במהלך ה-while לא יפגעו, כי הצינון שלהם יתחיל רשמית רק מעכשיו.
+        for pos in list(board._grid.keys()):
+            piece = board.get_piece_at(pos)
+            if piece and piece.cooldown_remaining > 0:
+                piece.cooldown_remaining = max(0, piece.cooldown_remaining - ms)
+
+        # 2. כעת נריץ את סימולציית התנועות באוויר
         tick_size = 100
         while remaining_ms > 0:
             current_tick = min(tick_size, remaining_ms)
             remaining_ms -= current_tick
 
-            # 1. נקדם את הזמן לכל הכלים הפעילים
+            # א. נקדם את הזמן לכל הכלים הפעילים
             for motion in self._active_motions:
                 if not motion.is_finished:
                     motion.advance_time(current_tick)
 
-            # 2. נפתור חסימות והתנגשויות שהתרחשו ב-Tick הזה
+            # ב. נפתור חסימות והתנגשויות שהתרחשו ב-Tick הזה
             self._resolve_collisions(board)
 
-            # 3. ננחית כלים שסיימו את התנועה שלהם
+            # ג. ננחית כלים שסיימו את התנועה שלהם (כאן הם יקבלו את הצינון המלא שלהם)
             for motion in list(self._active_motions):
                 if motion.is_finished:
                     self._handle_arrival(motion, board)
@@ -139,6 +148,7 @@ class RealTimeArbiter:
         for m in motions_to_remove:
             if m in self._active_motions:
                 self._active_motions.remove(m)
+
     def _handle_arrival(self, motion: Motion, board: Board) -> None:
         """מטפלת ברגע הנחיתה הלוגי של הכלי ביעד החדש שלו"""
         # 1. הסרה לוגית ממשבצת המקור (רק אם הכלי אכן זז ממנה פיזית)
@@ -153,3 +163,10 @@ class RealTimeArbiter:
         # 3. נחיתת הכלי ועדכון מיקומו החדש
         motion.piece.cell = motion.target
         board.add_piece(motion.piece)
+
+        # 4. שליפת זמן הצינון המתאים לסוג הכלי (ואם לא קיים, שימוש בברירת מחדל)
+        piece_kind = motion.piece.kind
+        cooldown_time = COOLDOWN_BY_KIND.get(piece_kind, DEFAULT_COOLDOWN)
+
+        # 5. הטענת הצינון לכלי
+        motion.piece.cooldown_remaining = cooldown_time

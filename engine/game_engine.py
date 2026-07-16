@@ -22,6 +22,10 @@ class GameEngine:
         if self._state.game_over:
             return {"IS_ACCEPTED": False, "REASON": "GAME OVER"}
 
+        piece = self._state.board.get_piece_at(source)
+        if piece and piece.cooldown_remaining > 0:
+            return {"IS_ACCEPTED": False, "REASON": "PIECE IN COOLDOWN"}
+
         # Guard 2: דחיית הבקשה אם יש כבר תנועה פעילה במסלול המבוקש (העברנו את ה-board!)
         if self._arbiter.is_route_active(self._state.board, source, target):
             return {"IS_ACCEPTED": False, "REASON": "MOTION IN PROGRESS"}
