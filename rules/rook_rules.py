@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from model.board import Board
 from model.piece import Piece
 from model.position import Position
@@ -11,10 +13,10 @@ def get_rook_destinations(board: Board, piece: Piece) -> set[Position]:
     # הגדרת 4 כיווני התנועה: (שינוי בשורה, שינוי בעמודה)
     # למעלה, למטה, ימינה, שמאלה
     directions = [
-        (1, 0),  # Up
+        (1, 0),   # Up
         (-1, 0),  # Down
-        (0, 1),  # Right
-        (0, -1)  # Left
+        (0, 1),   # Right
+        (0, -1)   # Left
     ]
 
     for d_row, d_col in directions:

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from model.board import Board
 from model.piece import Piece
 from model.position import Position
@@ -10,9 +11,9 @@ def get_knight_destinations(board: Board, piece: Piece) -> set[Position]:
 
     # הגדרת 8 קפיצות ה-L האפשריות של הפרש: (שינוי בשורה, שינוי בעמודה)
     moves_offsets = [
-        (2, 1), (2, -1),  # שניים למעלה, אחד ימינה/שמאלה
+        (2, 1), (2, -1),   # שניים למעלה, אחד ימינה/שמאלה
         (-2, 1), (-2, -1),  # שניים למטה, אחד ימינה/שמאלה
-        (1, 2), (1, -2),  # אחד למעלה, שניים ימינה/שמאלה
+        (1, 2), (1, -2),   # אחד למעלה, שניים ימינה/שמאלה
         (-1, 2), (-1, -2)  # אחד למטה, שניים ימינה/שמאלה
     ]
 

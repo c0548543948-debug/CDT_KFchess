@@ -1,3 +1,4 @@
+from __future__ import annotations
 from model.position import Position
 from config import CELL_SIZE  # מייבא את משתנה הסביבה שהגדרת בקונפיג שלך
 

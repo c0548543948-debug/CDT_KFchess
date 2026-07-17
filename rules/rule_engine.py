@@ -1,9 +1,10 @@
+from typing import List, Tuple, Dict
 from model.board import Board
 from model.position import Position
 from model.piece import Piece
 from rules.movement_rules import MOVEMENT_RULES
 
-def validate_motion(board: Board, src_position: Position, dest_position: Position) -> dict:
+def validate_motion(board: Board, src_position: Position, dest_position: Position) -> Dict:
     # שלב 1: בדיקת גבולות הלוח תחילה (כדי למנוע קריסות בהמשך)
     if not board.is_in_bounds(src_position):
         return {"IS_VALID": False, "REASON": "Source cell is out of bounds"}

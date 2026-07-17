@@ -1,9 +1,9 @@
+from typing import Set
 from model.board import Board
 from model.piece import Piece
 from model.position import Position
 
-
-def get_bishop_destinations(board: Board, piece: Piece) -> set[Position]:
+def get_bishop_destinations(board: Board, piece: Piece) -> Set[Position]:
     """מחזיר את כל המיקומים החוקיים שאליהם הרץ יכול לצעוד או לאכול בארבעת האלכסונים"""
     destinations = set()
     current_pos = piece.cell
@@ -11,7 +11,7 @@ def get_bishop_destinations(board: Board, piece: Piece) -> set[Position]:
     # הגדרת 4 כיווני האלכסון: (שינוי בשורה, שינוי בעמודה)
     # למעלה-ימינה, למעלה-שמאלה, למטה-ימינה, למטה-שמאלה
     directions = [
-        (1, 1),  # Up-Right
+        (1, 1),   # Up-Right
         (1, -1),  # Up-Left
         (-1, 1),  # Down-Right
         (-1, -1)  # Down-Left

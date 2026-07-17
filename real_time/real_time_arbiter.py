@@ -1,3 +1,4 @@
+from __future__ import annotations
 from model.position import Position
 from model.board import Board
 from model.motion import Motion
@@ -5,75 +6,61 @@ from config import COOLDOWN_BY_KIND, DEFAULT_COOLDOWN
 
 class RealTimeArbiter:
     def __init__(self):
-        # אוסף התנועות הפעילות כרגע במשחק (מחוץ ללוח)
         self._active_motions: list[Motion] = []
 
     def is_piece_moving(self, piece) -> bool:
-        """בודק האם כלי מסוים נמצא כרגע באמצע הליכה"""
         return any(m.piece == piece and not m.is_finished for m in self._active_motions)
 
     def is_route_active(self, board: Board, source: Position, target: Position) -> bool:
-        """
-        בלוגיקה החדשה: אין חסימת מסלולים מראש!
-        הבדיקה היחידה היא האם הכלי שרוצה לזוז כבר נמצא באמצע תנועה אחרת.
-        """
-        actual_piece = board.get_piece_at(source)
-        if not actual_piece:
+        piece = board.get_piece_at(source)
+        if not piece:
             return False
-
-        # mניעת פקודה כפולה לאותו כלי בלבד
-        return self.is_piece_moving(actual_piece)
+        return self.is_piece_moving(piece)
 
     def start_motion(self, board: Board, source: Position, target: Position) -> None:
-        """רושמת תנועה חדשה בארביטר. הלוח הלוגי לא משתנה עד לרגע ההגעה!"""
         piece = board.get_piece_at(source)
         if not piece:
             return
+        self._active_motions.append(Motion(piece, target, is_jump=False))
 
-        # יצירת אובייקט התנועה והוספתו לארביטר
-        new_motion = Motion(piece, target)
-        self._active_motions.append(new_motion)
+    def start_jump_motion(self, board: Board, source: Position) -> None:
+        """הכלי קופץ למעלה מעל הריבוע שלו — source == target, משך STEP_DURATION_MS."""
+        piece = board.get_piece_at(source)
+        if not piece:
+            return
+        board.remove_piece_at(source)
+        self._active_motions.append(Motion(piece, source, is_jump=True))
 
     def advance_time(self, ms: int, board: Board) -> list[str]:
-        """
-        מקדמת את זמן הסימולציה בצעדים קטנים (Ticks) לפתרון מדויק של התנגשויות,
-        ולאחר מכן מפחיתה את זמני הצינון של הכלים שעל הלוח.
-        """
-        finished_pieces_kinds = []
+        """מחזירה רשימת צבעי מלכים שנאכלו."""
+        captured_kings: list[str] = []
         remaining_ms = ms
 
-        # 1. קודם כל: נפחית את הצינון לכלים שכבר עמדו על הלוח בתחילת הפעימה הזו.
-        # הכלים שינחתו במהלך ה-while לא יפגעו, כי הצינון שלהם יתחיל רשמית רק מעכשיו.
         for pos in list(board._grid.keys()):
             piece = board.get_piece_at(pos)
             if piece and piece.cooldown_remaining > 0:
                 piece.cooldown_remaining = max(0, piece.cooldown_remaining - ms)
 
-        # 2. כעת נריץ את סימולציית התנועות באוויר
         tick_size = 100
         while remaining_ms > 0:
             current_tick = min(tick_size, remaining_ms)
             remaining_ms -= current_tick
 
-            # א. נקדם את הזמן לכל הכלים הפעילים
             for motion in self._active_motions:
                 if not motion.is_finished:
                     motion.advance_time(current_tick)
 
-            # ב. נפתור חסימות והתנגשויות שהתרחשו ב-Tick הזה
-            self._resolve_collisions(board)
+            self._resolve_collisions(board, captured_kings)
 
-            # ג. ננחית כלים שסיימו את התנועה שלהם (כאן הם יקבלו את הצינון המלא שלהם)
             for motion in list(self._active_motions):
                 if motion.is_finished:
-                    self._handle_arrival(motion, board)
-                    finished_pieces_kinds.append(motion.piece.kind)
-                    self._active_motions.remove(motion)
+                    self._handle_arrival(motion, board, captured_kings)
+                    if motion in self._active_motions:
+                        self._active_motions.remove(motion)
 
-        return finished_pieces_kinds
+        return captured_kings
 
-    def _resolve_collisions(self, board: Board) -> None:
-        """מזהה ופותרת התנגשויות (חברים ואויבים) בין כלים הנמצאים באוויר ועל הלוח"""
+    def _resolve_collisions(self, board: Board, captured_kings: list[str]) -> None:
         motions_to_remove = set()
         motions_to_arrive_instantly = set()
 
@@ -83,90 +70,97 @@ class RealTimeArbiter:
 
             next_pos = motion.get_next_physical_position()
             if not next_pos:
-                continue
+                continue  # כלים קופצים (is_jump, 0 צעדים) — רק מגיבים, לא יוזמים
 
-            # 1. בדיקת התנגשות עם כלי דינמי אחר באוויר (שחוסם את משבצת היעד הבאה שלנו)
-            active_piece_there = None
-            other_motion_to_kill = None
+            jump_captor = None
+            air_enemy = None
+            air_friend = None
 
-            for other_motion in self._active_motions:
-                if other_motion == motion or other_motion.is_finished or other_motion in motions_to_remove or other_motion in motions_to_arrive_instantly:
+            for other in self._active_motions:
+                if (other == motion or other.is_finished
+                        or other in motions_to_remove or other in motions_to_arrive_instantly):
                     continue
 
-                # התנגשות באוויר: הכלי האחר נמצא כרגע או יהיה ב-next_pos שלנו ב-Tick הזה
-                if (other_motion.get_current_physical_position() == next_pos or
-                        other_motion.get_next_physical_position() == next_pos):
+                hits = (other.get_current_physical_position() == next_pos or
+                        other.get_next_physical_position() == next_pos)
+                if not hits:
+                    continue
 
-                    # שומר שוויון אמין: מי שאינדקס הרישום שלו בארביטר גבוה יותר הוא היוזם האחרון
-                    idx_motion = self._active_motions.index(motion)
-                    idx_other = self._active_motions.index(other_motion)
+                idx_self = self._active_motions.index(motion)
+                idx_other = self._active_motions.index(other)
 
-                    if idx_motion > idx_other:
-                        active_piece_there = other_motion.piece
-                        other_motion_to_kill = other_motion
+                if other.piece.color == motion.piece.color:
+                    if idx_self > idx_other:
+                        air_friend = other
+                    break
+                else:
+                    if other.is_jump:
+                        jump_captor = other  # כלי קופץ תופס את motion
+                        break
+                    elif idx_self < idx_other:
+                        air_enemy = other  # motion מנצח, other מפסיד
                         break
 
-            # 2. בדיקת התנגשות עם כלי סטטי על הלוח (במידה ואין התנגשות דינמית באוויר)
-            static_piece = None
-            if not active_piece_there:
-                static_piece = board.get_piece_at(next_pos)
+            if jump_captor:
+                board.remove_piece_at(motion.source)
+                if motion.piece.kind == "king":
+                    captured_kings.append(motion.piece.color)
+                motions_to_remove.add(motion)
+                motions_to_arrive_instantly.add(jump_captor)
+                continue
 
-            blocking_piece = static_piece or active_piece_there
-            if blocking_piece:
-                # א. התנגשות חברים (אותו צבע) -> הכלי שיזם אחרון נבלם משבצת אחת קודם (במיקומו הנוכחי)
-                if blocking_piece.color == motion.piece.color:
-                    current_idx = motion.get_current_physical_step_idx()
-                    motion.force_stop_at_step(current_idx)
+            if air_friend:
+                motion.force_stop_at_step(motion.get_current_physical_step_idx())
+                motions_to_arrive_instantly.add(motion)
+                continue
 
-                    # ננחית את הכלי מיידית ביעדו החדש
-                    motions_to_arrive_instantly.add(motion)
+            if air_enemy:
+                board.remove_piece_at(air_enemy.source)
+                if air_enemy.piece.kind == "king":
+                    captured_kings.append(air_enemy.piece.color)
+                motions_to_remove.add(air_enemy)
+                continue
 
-                # ב. התנגשות אויבים (צבעים שונים) -> הכלי שיזם אחרון אוכל ונעצר ב-next_pos
-                else:
-                    current_idx = motion.get_current_physical_step_idx()
-                    motion.force_stop_at_step(current_idx + 1)
+            static = board.get_piece_at(next_pos)
+            if not static:
+                continue
 
-                    # ננחית את הכלי התוקף מיידית ביעדו המעודכן (משבצת האכילה)
-                    motions_to_arrive_instantly.add(motion)
+            idx = motion.get_current_physical_step_idx()
+            if static.color == motion.piece.color:
+                motion.force_stop_at_step(idx)
+            else:
+                board.remove_piece_at(next_pos)
+                if static.kind == "king":
+                    captured_kings.append(static.color)
+                motion.force_stop_at_step(idx + 1)
+            motions_to_arrive_instantly.add(motion)
 
-                    # הסרת האויב הסטטי מהלוח
-                    if static_piece:
-                        board.remove_piece_at(next_pos)
-
-                    # הסרת האויב הדינמי מהלוח ומהארביטר
-                    if other_motion_to_kill:
-                        board.remove_piece_at(other_motion_to_kill.source)
-                        motions_to_remove.add(other_motion_to_kill)
-
-        # הנחתה מיידית של הכלים שנעצרו/אכלו
         for m in motions_to_arrive_instantly:
-            self._handle_arrival(m, board)
+            self._handle_arrival(m, board, captured_kings)
             if m in self._active_motions:
                 self._active_motions.remove(m)
 
-        # הסרה מסודרת של תנועות האויבים שנאכלו
         for m in motions_to_remove:
             if m in self._active_motions:
                 self._active_motions.remove(m)
 
-    def _handle_arrival(self, motion: Motion, board: Board) -> None:
-        """מטפלת ברגע הנחיתה הלוגי של הכלי ביעד החדש שלו"""
-        # 1. הסרה לוגית ממשבצת המקור (רק אם הכלי אכן זז ממנה פיזית)
+    def _handle_arrival(self, motion: Motion, board: Board, captured_kings: list[str]) -> None:
         if motion.source != motion.target:
             board.remove_piece_at(motion.source)
 
-        # 2. ניקוי כלי אויב שעומד ביעד (במידה ויש אכילה סופית)
         target_piece = board.get_piece_at(motion.target)
         if target_piece and target_piece.color != motion.piece.color:
             board.remove_piece_at(motion.target)
+            if target_piece.kind == "king":
+                captured_kings.append(target_piece.color)
 
-        # 3. נחיתת הכלי ועדכון מיקומו החדש
         motion.piece.cell = motion.target
-        board.add_piece(motion.piece)
+        if board.get_piece_at(motion.target) is None:
+            board.add_piece(motion.piece)
 
-        # 4. שליפת זמן הצינון המתאים לסוג הכלי (ואם לא קיים, שימוש בברירת מחדל)
-        piece_kind = motion.piece.kind
-        cooldown_time = COOLDOWN_BY_KIND.get(piece_kind, DEFAULT_COOLDOWN)
+        if motion.piece.kind in ("pawn", "p"):
+            if (motion.piece.color == "white" and motion.target.row == 0) or \
+               (motion.piece.color == "black" and motion.target.row == board.height - 1):
+                motion.piece._kind = "queen"
 
-        # 5. הטענת הצינון לכלי
-        motion.piece.cooldown_remaining = cooldown_time
+        motion.piece.cooldown_remaining = COOLDOWN_BY_KIND.get(motion.piece.kind, DEFAULT_COOLDOWN)

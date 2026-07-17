@@ -1,9 +1,9 @@
+from typing import Set
 from model.board import Board
 from model.piece import Piece
 from model.position import Position
 
-
-def get_king_destinations(board: Board, piece: Piece) -> set[Position]:
+def get_king_destinations(board: Board, piece: Piece) -> Set[Position]:
     """מחזיר את כל המיקומים החוקיים של המלך (צעד אחד לכל 8 הכיוונים)"""
     destinations = set()
     current_pos = piece.cell

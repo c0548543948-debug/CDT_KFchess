@@ -1,3 +1,4 @@
+from typing import Dict, Any, Callable
 from rules.pawn_rules import get_pawn_destinations
 from rules.rook_rules import get_rook_destinations
 from rules.bishop_rules import get_bishop_destinations
