@@ -11,6 +11,19 @@ class RealTimeArbiter:
     def is_piece_moving(self, piece) -> bool:
         return any(m.piece == piece and not m.is_finished for m in self._active_motions)
 
+    def _piece_has_any_motion(self, piece) -> bool:
+        """
+        בודקת אם לכלי יש תנועה ב-_active_motions — גם אם היא כבר הסתיימה (is_finished=True).
+
+        למה זה שונה מ-is_piece_moving?
+        בתוך אותו tick, ייתכן שגם המלך וגם התוקף מסיימים את התנועה שלהם.
+        is_piece_moving מחזיר False למלך (כי is_finished=True),
+        ואז התוקף "תופס" את המלך גם שהוא בעצם ברח באותה שנייה.
+        הפונקציה הזו מחזירה True גם לתנועות שסיימו אבל טרם הוסרו מהרשימה,
+        כך שהמלך נחשב כ"ברח" עד שה-_handle_arrival שלו מסיים לעבד אותו.
+        """
+        return any(m.piece == piece for m in self._active_motions)
+
     def is_route_active(self, board: Board, source: Position, target: Position) -> bool:
         piece = board.get_piece_at(source)
         if not piece:
@@ -189,10 +202,10 @@ class RealTimeArbiter:
 
         target_piece = board.get_piece_at(motion.target)
         if target_piece and target_piece.color != motion.piece.color:
-            if self.is_piece_moving(target_piece):
-                # תיקון 1: הכלי היריב כבר זזה מכאן — הוא ניצל!
-                # מסירים את הרישום הישן שלו מהלוח (הוא כבר מעוקב ע"י ה-Motion שלו)
-                # כך שהכלי התוקף יוכל לנחות. לא מוסיפים ל-captured_kings.
+            if self._piece_has_any_motion(target_piece):
+                # הכלי היריב ברח — יש לו תנועה ב-_active_motions
+                # (גם אם is_finished=True — עדיין לא עובד ב-_handle_arrival שלו)
+                # מסירים את הרישום הישן שלו מהלוח כדי שהתוקף יוכל לנחות.
                 board.remove_piece_at(motion.target)
             else:
                 # הכלי היריב עמד במקום — נאכל כרגיל
