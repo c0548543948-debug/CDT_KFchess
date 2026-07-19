@@ -11,7 +11,7 @@ from img import Img
 from sprite_manager import SpriteManager
 
 # CELL_SIZE = 100 (מוגדר ב-config.py בתיקיית הבסיס)
-from config import CELL_SIZE
+from config import CELL_SIZE, COOLDOWN_BY_KIND, DEFAULT_COOLDOWN
 
 # גודל הכלי קצת פחות מגודל המשבצת — נראה יפה יותר ונותן שוליים
 PIECE_SIZE = 80
@@ -38,6 +38,15 @@ class Renderer:
         self._board_data = cv2.imread(board_path, cv2.IMREAD_UNCHANGED)
         if self._board_data is None:
             raise FileNotFoundError(f"לא ניתן לטעון את תמונת הלוח: {board_path}")
+
+        # תמונת הלוח היא 822×828 פיקסלים, לא 800×800.
+        # יש גם גבול דקורטיבי: ~2px משמאל, ~6px מלמעלה.
+        # מחשבים את גודל התא האמיתי מתוך ממדי התמונה בפועל.
+        H, W = self._board_data.shape[:2]
+        self._offset_x = 2    # פיקסלים של גבול שמאלי
+        self._offset_y = 6    # פיקסלים של גבול עליון
+        self._cell_w = (W - self._offset_x) / 8.0   # ~102.5 px
+        self._cell_h = (H - self._offset_y) / 8.0   # ~102.75 px
 
     # ------------------------------------------------------------------ #
     #  ממשק ציבורי                                                         #
@@ -87,6 +96,9 @@ class Renderer:
                 is_jump  = False
                 is_moving = False
 
+            # מצייר שכבת cooldown על הריבוע (לפני הספריט, כך שהספריט יהיה מעל)
+            self._draw_cooldown_overlay(canvas, piece)
+
             # מבקשים את הפריים הנכון מה-SpriteManager
             frame = self._sprite_manager.get_frame(piece, elapsed_ms, is_moving, is_jump)
 
@@ -134,12 +146,12 @@ class Renderer:
         לכן ממירים ל-int רק בסוף, אחרי חישוב מרכז הפיקסל.
 
         חישוב:
-          מרכז המשבצת (בפיקסלים) = מיקום_לוגי * CELL_SIZE + CELL_SIZE/2
+          מרכז המשבצת = offset + מיקום_לוגי * cell_size + cell_size/2
           פינה שמאלית עליונה של הכלי = מרכז - PIECE_SIZE/2
         """
-        # מרכז הכלי בפיקסלים
-        center_x = int(col * CELL_SIZE + CELL_SIZE / 2)
-        center_y = int(row * CELL_SIZE + CELL_SIZE / 2)
+        # מרכז המשבצת בפיקסלים — כולל offset של גבול הלוח
+        center_x = int(self._offset_x + col * self._cell_w + self._cell_w / 2)
+        center_y = int(self._offset_y + row * self._cell_h + self._cell_h / 2)
 
         # פינה שמאלית עליונה — ממנה מתחיל הציור
         draw_x = center_x - PIECE_SIZE // 2
@@ -152,3 +164,53 @@ class Renderer:
 
         # הדבקה עם תמיכה בשקיפות (alpha) דרך מתודת draw_on של Img
         frame.draw_on(canvas, draw_x, draw_y)
+
+    def _draw_cooldown_overlay(self, canvas: Img, piece) -> None:
+        """
+        מצייר אפקט cooldown על המשבצת של הכלי:
+        - בהתחלה: כל הריבוע כתום מלא
+        - לאט לאט: הצבע המקורי מתגלה מלמעלה למטה
+        - בסוף: הריבוע חוזר לצבעו המקורי לחלוטין
+        """
+        if piece.cooldown_remaining <= 0:
+            return
+
+        max_cooldown = COOLDOWN_BY_KIND.get(piece.kind, DEFAULT_COOLDOWN)
+
+        # ratio: 1.0 = cooldown מלא (כל הריבוע אפור)
+        #        0.0 = cooldown נגמר (אין אפור)
+        ratio = piece.cooldown_remaining / max_cooldown
+
+        # כמה פיקסלים מהריבוע עדיין אפורים (תמיד בתחתית)
+        # ratio=1.0 → gray_height = cell_h (כל הריבוע)
+        # ratio=0.5 → gray_height = cell_h/2 (חצי תחתון)
+        # ratio=0.0 → gray_height = 0 (כלום)
+        cell_w = int(self._cell_w)
+        cell_h = int(self._cell_h)
+        gray_height = int(ratio * cell_h)
+        if gray_height <= 0:
+            return
+
+        # פינה שמאלית עליונה של המשבצת — כולל offset של גבול הלוח
+        sq_x = int(self._offset_x + piece.cell.col * self._cell_w)
+        sq_y = int(self._offset_y + piece.cell.row * self._cell_h)
+
+        # החלק האפור תמיד בתחתית הריבוע ומתכווץ כלפי מטה
+        gray_y_start = sq_y + (cell_h - gray_height)
+        gray_y_end   = sq_y + cell_h
+
+        # בדיקת גבולות
+        H, W = canvas.img.shape[:2]
+        x1 = max(0, sq_x)
+        y1 = max(0, gray_y_start)
+        x2 = min(W, sq_x + cell_w)
+        y2 = min(H, gray_y_end)
+        if x1 >= x2 or y1 >= y2:
+            return
+
+        # אפור בינוני: BGR = [140, 140, 140]
+        channels = canvas.img.shape[2]
+        if channels == 4:
+            canvas.img[y1:y2, x1:x2] = [140, 140, 140, 255]  # BGRA
+        else:
+            canvas.img[y1:y2, x1:x2] = [140, 140, 140]        # BGR
