@@ -94,14 +94,14 @@ class RealTimeArbiter:
                         or other in motions_to_remove or other in motions_to_arrive_instantly):
                     continue
 
-                # כלי "באוויר" ב-next_pos רק אם הוא עבר לפחות צעד אחד מהמקור שלו.
-                # אם הוא בצעד 0 (עדיין על הלוח במקורו), לא מדובר בהתנגשות אווירית —
-                # הוא יטופל ע"י הבדיקה הסטטית למטה.
-                other_in_air_at_next = (
-                    other.get_current_physical_position() == next_pos
-                    and other.get_current_physical_step_idx() > 0
-                )
-                hits = other_in_air_at_next or other.get_next_physical_position() == next_pos
+                if other.is_jump:
+                    hits = other.source == next_pos
+                else:
+                    other_in_air_at_next = (
+                            other.get_current_physical_position() == next_pos
+                            and other.get_current_physical_step_idx() > 0
+                    )
+                    hits = other_in_air_at_next or other.get_next_physical_position() == next_pos
                 if not hits:
                     continue
 
