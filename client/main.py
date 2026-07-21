@@ -1,11 +1,11 @@
 import sys
-from model.game_state import GameState
-from real_time.real_time_arbiter import RealTimeArbiter
+from engine.model import GameState
+from engine.real_time import RealTimeArbiter
 from engine.game_engine import GameEngine
 from input.board_mapper import BoardMapper
 from input.controller import GameController
-from io_utils.board_printer import BoardPrinter
-from io_utils.board_parser import BoardParser
+from engine.io_utils.board_printer import BoardPrinter
+from engine.io_utils import BoardParser
 
 def read_board_section():
     lines = []
