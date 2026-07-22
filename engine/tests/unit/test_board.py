@@ -1,8 +1,8 @@
 import unittest
 import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../client'))
-from model.board import Board
-from model.piece import Piece
-from model.position import Position
+from engine.model.board import Board
+from engine.model.piece import Piece
+from engine.model.position import Position
 
 def piece(kind="rook", color="white", row=0, col=0):
     return Piece(f"{color}_{kind}_{row}_{col}", color, kind, Position(row, col))

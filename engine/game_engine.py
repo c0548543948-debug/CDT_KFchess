@@ -1,8 +1,8 @@
-from model.game_state import GameState
-from model.position import Position
-from real_time.real_time_arbiter import RealTimeArbiter
-from rules.rule_engine import validate_motion
-from rules.movement_rules import MOVEMENT_RULES
+from engine.model.game_state import GameState
+from engine.model.position import Position
+from engine.real_time.real_time_arbiter import RealTimeArbiter
+from engine.rules.rule_engine import validate_motion
+from engine.rules.movement_rules import MOVEMENT_RULES
 
 class GameEngine:
     def __init__(self, game_state: GameState, arbiter: RealTimeArbiter):

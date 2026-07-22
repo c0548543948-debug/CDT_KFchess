@@ -1,9 +1,9 @@
 import unittest
 import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../client'))
-from model.motion import Motion
-from model.piece import Piece
-from model.position import Position
-from config import STEP_DURATION_MS
+from engine.model.motion import Motion
+from engine.model.piece import Piece
+from engine.model.position import Position
+from engine.config import STEP_DURATION_MS
 
 def make_piece(kind="rook", color="white", row=0, col=0):
     return Piece(f"{color}_{kind}_{row}_{col}", color, kind, Position(row, col))

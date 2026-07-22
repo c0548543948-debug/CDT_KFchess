@@ -1,7 +1,7 @@
 from __future__ import annotations
-from model.board import Board
-from model.piece import Piece
-from model.position import Position
+from engine.model.board import Board
+from engine.model.piece import Piece
+from engine.model.position import Position
 
 
 def get_knight_destinations(board: Board, piece: Piece) -> set[Position]:

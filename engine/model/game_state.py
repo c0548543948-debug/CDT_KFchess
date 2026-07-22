@@ -1,4 +1,4 @@
-from model.board import Board
+from engine.model.board import Board
 
 
 class GameState:

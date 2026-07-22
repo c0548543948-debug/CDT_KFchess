@@ -1,21 +1,11 @@
-import sys
-import pathlib
-
-# מוסיפים את תיקיית הבסיס של הפרויקט ל-Python path
-# כך שנוכל לייבא מ-config, model וכו' גם כשרצים מתוך תיקיית view/
-sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
-
 import math
 import cv2
 
-from img import Img
-from sprite_manager import SpriteManager
-
-# CELL_SIZE = 100 (מוגדר ב-config.py בתיקיית הבסיס)
-from config import CELL_SIZE, COOLDOWN_BY_KIND, DEFAULT_COOLDOWN
-
+from rendering.img import Img
+from rendering.sprite_manager import SpriteManager
+from engine.config import CELL_SIZE, COOLDOWN_BY_KIND, DEFAULT_COOLDOWN
+from rendering.config import PIECE_SIZE, BOARD_OFFSET_X, BOARD_OFFSET_Y
 # גודל הכלי קצת פחות מגודל המשבצת — נראה יפה יותר ונותן שוליים
-PIECE_SIZE = 80
 
 
 class Renderer:
@@ -52,8 +42,8 @@ class Renderer:
         # יש גם גבול דקורטיבי: ~2px משמאל, ~6px מלמעלה.
         # מחשבים את גודל התא האמיתי מתוך ממדי התמונה בפועל.
         H, W = self._board_data.shape[:2]
-        self._offset_x = 2    # פיקסלים של גבול שמאלי
-        self._offset_y = 6    # פיקסלים של גבול עליון
+        self._offset_x = BOARD_OFFSET_X    # פיקסלים של גבול שמאלי
+        self._offset_y = BOARD_OFFSET_Y    # פיקסלים של גבול עליון
         self._cell_w = (W - self._offset_x) / 8.0   # ~102.5 px
         self._cell_h = (H - self._offset_y) / 8.0   # ~102.75 px
 

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from model.board import Board
-from model.piece import Piece
-from model.position import Position
-from rules.bishop_rules import get_bishop_destinations
-from rules.rook_rules import get_rook_destinations
+from engine.model.board import Board
+from engine.model.piece import Piece
+from engine.model.position import Position
+from engine.rules.bishop_rules import get_bishop_destinations
+from engine.rules.rook_rules import get_rook_destinations
 
 
 def get_queen_destinations(board: Board, piece: Piece) -> set[Position]:

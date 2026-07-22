@@ -1,12 +1,11 @@
 import unittest
-import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../client'))
-from model.board import Board
-from model.piece import Piece
-from model.position import Position
-from model.game_state import GameState
-from real_time.real_time_arbiter import RealTimeArbiter
+from engine.model.board import Board
+from engine.model.piece import Piece
+from engine.model.position import Position
+from engine.model.game_state import GameState
+from engine.real_time.real_time_arbiter import RealTimeArbiter
 from engine.game_engine import GameEngine
-from config import STEP_DURATION_MS, COOLDOWN_BY_KIND
+from engine.config import STEP_DURATION_MS, COOLDOWN_BY_KIND
 
 
 def make_engine(*specs, w=8, h=8):

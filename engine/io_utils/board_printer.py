@@ -1,6 +1,5 @@
-from model.position import Position
-from model.piece import Piece
-from model.board import Board
+from engine.model.position import Position
+from engine.model.board import Board
 class BoardPrinter:
     @staticmethod
     def print_board(board: Board) -> str:

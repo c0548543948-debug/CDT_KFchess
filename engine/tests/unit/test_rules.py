@@ -1,9 +1,9 @@
 import unittest
 import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../client'))
-from model.board import Board
-from model.piece import Piece
-from model.position import Position
-from rules.rule_engine import validate_motion
+from engine.model.board import Board
+from engine.model.piece import Piece
+from engine.model.position import Position
+from engine.rules.rule_engine import validate_motion
 
 
 def make_board(w, h, *specs):

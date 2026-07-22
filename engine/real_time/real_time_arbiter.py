@@ -1,8 +1,8 @@
 from __future__ import annotations
-from model.position import Position
-from model.board import Board
-from model.motion import Motion
-from config import COOLDOWN_BY_KIND, DEFAULT_COOLDOWN
+from engine.model.position import Position
+from engine.model.board import Board
+from engine.model.motion import Motion
+from engine.config import COOLDOWN_BY_KIND, DEFAULT_COOLDOWN
 
 class RealTimeArbiter:
     def __init__(self):

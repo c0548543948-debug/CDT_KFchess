@@ -1,6 +1,6 @@
 from typing import Dict, Optional
-from model.position import Position
-from model.piece import Piece
+from engine.model.position import Position
+from engine.model.piece import Piece
 
 
 class Board:

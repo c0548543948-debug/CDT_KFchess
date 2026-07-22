@@ -1,7 +1,7 @@
 from __future__ import annotations
-from model.position import Position
-from model.piece import Piece
-from config import STEP_DURATION_MS
+from engine.model.position import Position
+from engine.model.piece import Piece
+from engine.config import STEP_DURATION_MS
 
 class Motion:
     def __init__(self, piece: Piece, target: Position, is_jump: bool = False):

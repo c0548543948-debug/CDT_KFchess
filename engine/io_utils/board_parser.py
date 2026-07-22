@@ -1,7 +1,7 @@
 # io_utils.py
-from model.position import Position
-from model.piece import Piece
-from model.board import Board
+from engine.model.position import Position
+from engine.model.piece import Piece
+from engine.model.board import Board
 
 # הגדרת תווים חוקיים בשחמט (צבע + סוג כלי)
 VALID_COLORS = {'w', 'b'}

@@ -1,7 +1,7 @@
 import unittest
 import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../client'))
-from model.position import Position
-from io_utils.board_parser import BoardParser, BoardPrinter
+from engine.model.position import Position
+from engine.io_utils.board_parser import BoardParser, BoardPrinter
 
 
 SIMPLE_BOARD = """\

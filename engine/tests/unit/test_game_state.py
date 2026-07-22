@@ -1,9 +1,9 @@
 import unittest
 import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../client'))
-from model.board import Board
-from model.piece import Piece
-from model.position import Position
-from model.game_state import GameState
+from engine.model.board import Board
+from engine.model.piece import Piece
+from engine.model.position import Position
+from engine.model.game_state import GameState
 
 
 class TestGameState(unittest.TestCase):

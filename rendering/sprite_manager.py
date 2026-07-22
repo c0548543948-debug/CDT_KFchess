@@ -2,7 +2,7 @@ import pathlib
 import cv2
 
 # ייבוא מחלקת Img מאותה תיקייה
-from img import Img
+from rendering.img import Img
 
 
 class SpriteManager:

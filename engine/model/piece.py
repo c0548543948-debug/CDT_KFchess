@@ -1,4 +1,4 @@
-from model.position import Position
+from engine.model.position import Position
 
 
 class Piece:

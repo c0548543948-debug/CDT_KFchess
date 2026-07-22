@@ -1,10 +1,10 @@
 import unittest
 import sys, os; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../client'))
-from model.board import Board
-from model.piece import Piece
-from model.position import Position
-from real_time.real_time_arbiter import RealTimeArbiter
-from config import COOLDOWN_BY_KIND, STEP_DURATION_MS
+from engine.model.board import Board
+from engine.model.piece import Piece
+from engine.model.position import Position
+from engine.real_time.real_time_arbiter import RealTimeArbiter
+from engine.config import COOLDOWN_BY_KIND, STEP_DURATION_MS
 
 def make_board(*specs):
     """specs = (kind, color, row, col) ..."""

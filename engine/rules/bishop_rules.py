@@ -1,7 +1,7 @@
 from typing import Set
-from model.board import Board
-from model.piece import Piece
-from model.position import Position
+from engine.model.board import Board
+from engine.model.piece import Piece
+from engine.model.position import Position
 
 def get_bishop_destinations(board: Board, piece: Piece) -> Set[Position]:
     """מחזיר את כל המיקומים החוקיים שאליהם הרץ יכול לצעוד או לאכול בארבעת האלכסונים"""
