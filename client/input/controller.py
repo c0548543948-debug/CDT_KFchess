@@ -65,11 +65,11 @@ class GameController:
         row_number = str(pos.row + 1)
         return col_letter + row_number
 
-    def _build_move(self, source: Position, target: Position) -> str:
-        return self._pos_to_str(source) + self._pos_to_str(target)
+    def _build_move(self, source: Position, target: Position) -> dict:
+        return {"type": "move", "command": self._pos_to_str(source) + self._pos_to_str(target)}
 
-    def _build_jump(self, pos: Position) -> str:
-        return self._pos_to_str(pos)
+    def _build_jump(self, pos: Position) -> dict:
+        return {"type": "jump", "command": self._pos_to_str(pos)}
 
     @property
     def selected_position(self) -> Position:
